@@ -1,2 +1,6 @@
-画一个立方体
-加上边和顶点
+Figure out how to determine the size in z-axis
+Apply opacity to each face
+Draw edge with specified style
+Draw inner-cube with connectors to the outside one
+Add animation to reach the result
+Add reflection effects
