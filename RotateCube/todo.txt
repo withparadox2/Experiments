@@ -1,5 +1,9 @@
-Apply opacity to each face
 Draw edge with specified style
+Support touch event
 Draw inner-cube with connectors to the outside one
 Add animation to reach the result
+
+// It requires to order the faces according to the distance from which to our eyes, which is not easy,
+// so put it late.
+Apply opacity to each face
 Add reflection effects

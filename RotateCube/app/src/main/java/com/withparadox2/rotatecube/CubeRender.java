@@ -12,28 +12,8 @@ import java.nio.FloatBuffer;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-import static android.opengl.GLES20.GL_COLOR_BUFFER_BIT;
-import static android.opengl.GLES20.GL_CULL_FACE;
-import static android.opengl.GLES20.GL_DEPTH_BUFFER_BIT;
-import static android.opengl.GLES20.GL_DEPTH_TEST;
-import static android.opengl.GLES20.GL_FLOAT;
-import static android.opengl.GLES20.GL_TRIANGLES;
-import static android.opengl.GLES20.GL_TRIANGLE_STRIP;
-import static android.opengl.GLES20.glClear;
-import static android.opengl.GLES20.glClearColor;
-import static android.opengl.GLES20.glDrawArrays;
-import static android.opengl.GLES20.glEnable;
-import static android.opengl.GLES20.glEnableVertexAttribArray;
-import static android.opengl.GLES20.glGetAttribLocation;
-import static android.opengl.GLES20.glGetUniformLocation;
-import static android.opengl.GLES20.glUniform4f;
-import static android.opengl.GLES20.glUniformMatrix4fv;
-import static android.opengl.GLES20.glUseProgram;
-import static android.opengl.GLES20.glVertexAttribPointer;
-import static android.opengl.GLES20.glViewport;
+import static android.opengl.GLES20.*;
 import static android.opengl.Matrix.multiplyMM;
-import static android.opengl.Matrix.orthoM;
-import static android.opengl.Matrix.perspectiveM;
 import static android.opengl.Matrix.rotateM;
 import static android.opengl.Matrix.setIdentityM;
 import static android.opengl.Matrix.translateM;
@@ -57,54 +37,102 @@ public class CubeRender implements GLSurfaceView.Renderer {
 
   private static final String U_MATRIX = "u_Matrix";
   private final float[] projectionMatrix = new float[16];
+  private final float[] backMatrix = new float[16];
   private final float[] modelMatrix = new float[16];
+
+  float[] outerPoints = {
+      -1f, -1f, -1f, -1f, 1f, -1f, -1f, 1f, 1f, -1f, -1f, 1f, 1f, -1f, -1f, 1f, 1f, -1f, 1f, 1f, 1f,
+      1f, -1f, 1f,
+  };
+
+  float[] backOuterPoints = {
+      -1f, -1f, -1f, -1f, 1f, -1f, -1f, 1f, 1f, -1f, -1f, 1f, 1f, -1f, -1f, 1f, 1f, -1f, 1f, 1f, 1f,
+      1f, -1f, 1f,
+  };
+
+  float[] innerPoints = {
+      -0.5f, -0.5f, -0.5f, -0.5f, 0.5f, -0.5f, -0.5f, 0.5f, 0.5f, -0.5f, -0.5f, 0.5f, 0.5f, -0.5f,
+      -0.5f, 0.5f, 0.5f, -0.5f, 0.5f, 0.5f, 0.5f, 0.5f, -0.5f, 0.5f,
+  };
+
+  float[] backInnerPoints = {
+      -0.5f, -0.5f, -0.5f, -0.5f, 0.5f, -0.5f, -0.5f, 0.5f, 0.5f, -0.5f, -0.5f, 0.5f, 0.5f, -0.5f,
+      -0.5f, 0.5f, 0.5f, -0.5f, 0.5f, 0.5f, 0.5f, 0.5f, -0.5f, 0.5f,
+  };
+
+  float[] lines = new float[144];
 
   public CubeRender(Context context) {
     this.mContext = context;
 
-    float[] tableVerticesWithTriangles = {
-        //下
-        -1f, -1f, -1f,
-        -1f,  1f, -1f,
-         1f, -1f, -1f,
-         1f,  1f, -1f,
+    //float[] tableVerticesWithTriangles = {
+    //    //下
+    //    -1f, -1f, -1f,
+    //    -1f,  1f, -1f,
+    //     1f, -1f, -1f,
+    //     1f,  1f, -1f,
+    //
+    //    //上
+    //    -1f, -1f,  1f,
+    //    -1f,  1f,  1f,
+    //     1f, -1f,  1f,
+    //     1f,  1f,  1f,
+    //
+    //    //左
+    //    -1f, -1f, -1f,
+    //    -1f, -1f,  1f,
+    //    -1f,  1f, -1f,
+    //    -1f,  1f,  1f,
+    //
+    //    //右
+    //     1f, -1f, -1f,
+    //     1f, -1f,  1f,
+    //     1f,  1f, -1f,
+    //     1f,  1f,  1f,
+    //
+    //    //前
+    //    -1f, -1f, -1f,
+    //    -1f, -1f,  1f,
+    //     1f, -1f, -1f,
+    //     1f, -1f,  1f,
+    //
+    //    //后
+    //    -1f,  1f, -1f,
+    //    -1f,  1f,  1f,
+    //     1f,  1f, -1f,
+    //     1f,  1f,  1f,
+    //};
 
-        //上
-        -1f, -1f,  1f,
-        -1f,  1f,  1f,
-         1f, -1f,  1f,
-         1f,  1f,  1f,
-
-        //左
-        -1f, -1f, -1f,
-        -1f, -1f,  1f,
-        -1f,  1f, -1f,
-        -1f,  1f,  1f,
-
-        //右
-         1f, -1f, -1f,
-         1f, -1f,  1f,
-         1f,  1f, -1f,
-         1f,  1f,  1f,
-
-        //前
-        -1f, -1f, -1f,
-        -1f, -1f,  1f,
-         1f, -1f, -1f,
-         1f, -1f,  1f,
-
-        //后
-        -1f,  1f, -1f,
-        -1f,  1f,  1f,
-         1f,  1f, -1f,
-         1f,  1f,  1f,
-    };
-
-    vertexData = ByteBuffer.allocateDirect(tableVerticesWithTriangles.length * BYTES_PER_FLOAT)
+    fillLines();
+    vertexData = ByteBuffer.allocateDirect(lines.length * BYTES_PER_FLOAT)
         .order(ByteOrder.nativeOrder())
         .asFloatBuffer();
 
-    vertexData.put(tableVerticesWithTriangles);
+    vertexData.put(lines);
+  }
+
+  private void fillLines() {
+    for (int i = 0; i < 8; i++) {
+      for (int j = 0; j < 3; j++) {
+        int index = 3 * i + j;
+        //outer: left and right frame
+        lines[index] = outerPoints[index];
+        //inner: left and right frame
+        lines[48 + index] = innerPoints[index];
+
+        int target = 3 * (i / 2) + j;
+        target = i % 2 == 0 ? target : target + 12;
+        //outer: four connectors between left and right
+        lines[24 + index] = outerPoints[target];
+        //inner: four connectors between left and right
+        lines[72 + index] = innerPoints[target];
+
+        //eight connectors between outer and inner
+        target = 6 * i + j;
+        lines[96 + target] = outerPoints[index];
+        lines[96 + target + 3] = innerPoints[index];
+      }
+    }
   }
 
   @Override public void onSurfaceCreated(GL10 gl, EGLConfig config) {
@@ -112,7 +140,6 @@ public class CubeRender implements GLSurfaceView.Renderer {
 
     glEnable(GL_DEPTH_TEST);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 
     int vertexShader = ShaderHelper.compileVertexShader(
         Utils.readTextFileFromResource(mContext, R.raw.simple_vertex_shader));
@@ -141,10 +168,11 @@ public class CubeRender implements GLSurfaceView.Renderer {
     setIdentityM(modelMatrix, 0);
 
     translateM(modelMatrix, 0, 0f, 0f, -10f);
-    rotateM(modelMatrix, 0, -90f, 1f, 0f, 0f);
+    rotateM(modelMatrix, 0, -30f, 0.5f, 1f, 0f);
 
     multiplyMM(temp, 0, projectionMatrix, 0, modelMatrix, 0);
     System.arraycopy(temp, 0, projectionMatrix, 0, temp.length);
+    System.arraycopy(temp, 0, backMatrix, 0, temp.length);
   }
 
   private final float[] temp = new float[16];
@@ -159,31 +187,187 @@ public class CubeRender implements GLSurfaceView.Renderer {
     System.arraycopy(temp, 0, projectionMatrix, 0, temp.length);
   }
 
+  private void updateVertexData(float percent) {
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 3; j++) {
+        int index = i * 3 + j;
+        int index2 = index + 12;
+
+        float base = 0.3f;
+
+        if (j == 0) {
+          outerPoints[index2] = backOuterPoints[index2] - (percent)  * 2;
+
+          outerPoints[index] = backOuterPoints[index] + percent * 0.5f;
+
+          innerPoints[index2] = backInnerPoints[index2] + percent * 0.5f;
+          innerPoints[index] = backInnerPoints[index] + percent;
+        } else {
+          float scale = 1.2f;
+          if (percent < base) {
+            outerPoints[index2] = backOuterPoints[index2] * (1 + percent / base * (scale - 1));
+          } else {
+            outerPoints[index2] =
+                backOuterPoints[index2] * (scale + (percent - base) / (1 - base) * (1 - scale));
+          }
+
+          innerPoints[index2] = backInnerPoints[index2] * (1f + percent);
+
+          outerPoints[index] = backOuterPoints[index] * (1 - 0.5f * percent);
+        }
+      }
+    }
+
+    fillLines();
+    vertexData.put(lines);
+    vertexData.position(0);
+
+    setIdentityM(modelMatrix, 0);
+    rotateM(modelMatrix, 0, -percent * 90, 1f, 0.f, 0.f);
+
+    multiplyMM(temp, 0, backMatrix, 0, modelMatrix, 0);
+    System.arraycopy(temp, 0, projectionMatrix, 0, temp.length);
+  }
+
+  private float percent = 0f;
+  private int loopCount = 0;
+
   @Override public void onDrawFrame(GL10 gl) {
-    updateMatrix();
+    if (percent >= 1f) {
+      percent = 0f;
+      loopCount++;
+    }
+    updateVertexData(percent);
+    percent += 0.009;
+
+    //updateMatrix();
+
     glClear(GLES20.GL_COLOR_BUFFER_BIT);
     glUniformMatrix4fv(uMatrixLocation, 1, false, projectionMatrix, 0);
 
-    glUniform4f(uColorLocation, 0.0f, 1.0f, 0.0f, 0f);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    //glEnable(GL_BLEND);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //
+    //glUniform4f(uColorLocation, 0.0f, 1.0f, 0.0f, 0.5f);
+    //glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    //
+    //glUniform4f(uColorLocation, 1.0f, 0.0f, 0.0f, 0.5f);
+    //glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
+    //
+    //glUniform4f(uColorLocation, 1.0f, 1.0f, 0.0f, 0.5f);
+    //glDrawArrays(GL_TRIANGLE_STRIP, 8, 4);
+    //
+    //glUniform4f(uColorLocation, 1.0f, 0.0f, 1.0f, 0.5f);
+    //glDrawArrays(GL_TRIANGLE_STRIP, 12, 4);
+    //
+    //glUniform4f(uColorLocation, 0.0f, 1.0f, 1.0f, 0.5f);
+    //glDrawArrays(GL_TRIANGLE_STRIP, 16, 4);
+    //
+    //glUniform4f(uColorLocation, 0.0f, 0.0f, 1.0f, 0.5f);
+    //glDrawArrays(GL_TRIANGLE_STRIP, 20, 4);
 
-    glUniform4f(uColorLocation, 1.0f, 0.0f, 0.0f, 0f);
-    glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
+    glLineWidth(9.0f);
+    if (loopCount % 4 == 0) {
+      glUniform4f(uColorLocation, 1.0f, 1.0f, 0.0f, 1.0f);
+      glDrawArrays(GL_LINE_LOOP, 0, 4);
 
-    glUniform4f(uColorLocation, 1.0f, 1.0f, 0.0f, 0f);
-    glDrawArrays(GL_TRIANGLE_STRIP, 8, 4);
+      glUniform4f(uColorLocation, 1.0f, 0.0f, 1.0f, 1.0f);
+      glDrawArrays(GL_LINE_LOOP, 16, 4);
 
-    glUniform4f(uColorLocation, 1.0f, 0.0f, 1.0f, 0f);
-    glDrawArrays(GL_TRIANGLE_STRIP, 12, 4);
+      glUniform4f(uColorLocation, .8f, 0.5f, .0f, 1.0f);
+      glDrawArrays(GL_LINE_LOOP, 20, 4);
 
-    glUniform4f(uColorLocation, 0.0f, 1.0f, 1.0f, 0f);
-    glDrawArrays(GL_TRIANGLE_STRIP, 16, 4);
+      glUniform4f(uColorLocation, 0.6f, .2f, 0.7f, 1.0f);
+      glDrawArrays(GL_LINE_LOOP, 4, 4);
 
-    glUniform4f(uColorLocation, 0.0f, 0.0f, 1.0f, 0f);
-    glDrawArrays(GL_TRIANGLE_STRIP, 20, 4);
+      glUniform4f(uColorLocation, 0.7f, .6f, 0.3f, 1.0f);
+      glDrawArrays(GL_LINES, 8, 8);
 
-    //glUniform4f(uColorLocation, 1.0f, 0.0f, 0.0f, 1.0f);
-    //glDrawArrays(GL_LINES, 6, 2);
+      glUniform4f(uColorLocation, 0.0f, 1.0f, 1.0f, 1.0f);
+      glDrawArrays(GL_LINES, 32, 8);
+
+      glUniform4f(uColorLocation, .2f, 0.9f, .3f, 1.0f);
+      glDrawArrays(GL_LINES, 24, 8);
+
+      glUniform4f(uColorLocation, 0.0f, 1.0f, 1.0f, 1.0f);
+      glDrawArrays(GL_LINES, 40, 8);
+
+    } else if (loopCount % 4 == 1) {
+      glUniform4f(uColorLocation, 0.6f, .2f, 0.7f, 1.0f);
+      glDrawArrays(GL_LINE_LOOP, 0, 4);
+
+      glUniform4f(uColorLocation, 1.0f, 1.0f, 0.0f, 1.0f);
+      glDrawArrays(GL_LINE_LOOP, 16, 4);
+
+      glUniform4f(uColorLocation, 1.0f, 0.0f, 1.0f, 1.0f);
+      glDrawArrays(GL_LINE_LOOP, 20, 4);
+
+      glUniform4f(uColorLocation, .8f, 0.5f, .0f, 1.0f);
+      glDrawArrays(GL_LINE_LOOP, 4, 4);
+
+      glUniform4f(uColorLocation, 0.0f, 1.0f, 1.0f, 1.0f);
+      glDrawArrays(GL_LINES, 8, 8);
+
+      glUniform4f(uColorLocation, 0.7f, .6f, 0.3f, 1.0f);
+      glDrawArrays(GL_LINES, 32, 8);
+
+      glUniform4f(uColorLocation, 0.0f, 1.0f, 1.0f, 1.0f);
+      glDrawArrays(GL_LINES, 24, 8);
+
+      glUniform4f(uColorLocation, .2f, 0.9f, .3f, 1.0f);
+      glDrawArrays(GL_LINES, 40, 8);
+
+    } else if (loopCount % 4 == 2) {
+      glUniform4f(uColorLocation, .8f, 0.5f, .0f, 1.0f);
+      glDrawArrays(GL_LINE_LOOP, 0, 4);
+
+      glUniform4f(uColorLocation, 0.6f, .2f, 0.7f, 1.0f);
+      glDrawArrays(GL_LINE_LOOP, 16, 4);
+
+      glUniform4f(uColorLocation, 1.0f, 1.0f, 0.0f, 1.0f);
+      glDrawArrays(GL_LINE_LOOP, 20, 4);
+
+      glUniform4f(uColorLocation, 1.0f, 0.0f, 1.0f, 1.0f);
+      glDrawArrays(GL_LINE_LOOP, 4, 4);
+
+      glUniform4f(uColorLocation, .2f, 0.9f, .3f, 1.0f);
+      glDrawArrays(GL_LINES, 8, 8);
+
+      glUniform4f(uColorLocation, 0.0f, 1.0f, 1.0f, 1.0f);
+      glDrawArrays(GL_LINES, 32, 8);
+
+      glUniform4f(uColorLocation, 0.7f, .6f, 0.3f, 1.0f);
+      glDrawArrays(GL_LINES, 24, 8);
+
+      glUniform4f(uColorLocation, 0.0f, 1.0f, 1.0f, 1.0f);
+      glDrawArrays(GL_LINES, 40, 8);
+
+    } else if (loopCount % 4 == 3) {
+      glUniform4f(uColorLocation, 1.0f, 0.0f, 1.0f, 1.0f);
+      glDrawArrays(GL_LINE_LOOP, 0, 4);
+
+      glUniform4f(uColorLocation, .8f, 0.5f, .0f, 1.0f);
+      glDrawArrays(GL_LINE_LOOP, 16, 4);
+
+      glUniform4f(uColorLocation, 0.6f, .2f, 0.7f, 1.0f);
+      glDrawArrays(GL_LINE_LOOP, 20, 4);
+
+      glUniform4f(uColorLocation, 1.0f, 1.0f, 0.0f, 1.0f);
+      glDrawArrays(GL_LINE_LOOP, 4, 4);
+
+      glUniform4f(uColorLocation, 0.0f, 1.0f, 1.0f, 1.0f);
+      glDrawArrays(GL_LINES, 8, 8);
+
+      glUniform4f(uColorLocation, .2f, 0.9f, .3f, 1.0f);
+      glDrawArrays(GL_LINES, 32, 8);
+
+      glUniform4f(uColorLocation, 0.0f, 1.0f, 1.0f, 1.0f);
+      glDrawArrays(GL_LINES, 24, 8);
+
+      glUniform4f(uColorLocation, 0.7f, .6f, 0.3f, 1.0f);
+      glDrawArrays(GL_LINES, 40, 8);
+    }
+
     //
     //// Draw the first mallet blue.
     //glUniform4f(uColorLocation, 0.0f, 0.0f, 1.0f, 1.0f);
@@ -192,5 +376,4 @@ public class CubeRender implements GLSurfaceView.Renderer {
     //glUniform4f(uColorLocation, 1.0f, 0.0f, 0.0f, 1.0f);
     //glDrawArrays(GL_POINTS, 9, 1);
   }
-
 }
