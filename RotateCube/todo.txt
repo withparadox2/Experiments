@@ -1,3 +1,5 @@
+Find out right rotating-axis when move in vertical direction
+
 // It requires to order the faces according to the distance from which to our eyes, which is not easy,
 // so put it late.
 Draw faces
