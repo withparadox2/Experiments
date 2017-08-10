@@ -37,8 +37,9 @@ public class CubeRender implements GLSurfaceView.Renderer {
   private static final int BYTES_PER_FLOAT = 4;
 
   private static final String U_MATRIX = "u_Matrix";
+  private final float[] projectionMatrixCopy = new float[16];
   private final float[] projectionMatrix = new float[16];
-  private final float[] modelMatrix = new float[16];
+  final float[] modelMatrix = new float[16];
 
   private final float[] hyperMatrix = new float[16];
 
@@ -139,6 +140,12 @@ public class CubeRender implements GLSurfaceView.Renderer {
     rotateM(modelMatrix, 0, 130f, 0f, 1f, 0f);
 
     multiplyMM(temp, 0, projectionMatrix, 0, modelMatrix, 0);
+    System.arraycopy(temp, 0, projectionMatrix, 0, temp.length);
+    System.arraycopy(temp, 0, projectionMatrixCopy, 0, temp.length);
+  }
+
+  public void updateProjectMatrix(float[] transform) {
+    multiplyMM(temp, 0, projectionMatrixCopy, 0, transform, 0);
     System.arraycopy(temp, 0, projectionMatrix, 0, temp.length);
   }
 

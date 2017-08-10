@@ -1,15 +1,9 @@
 package com.withparadox2.rotatecube;
 
 import android.app.Activity;
-import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.opengles.GL10;
-
-import static android.opengl.GLES20.*;
-import static android.opengl.GLUtils.*;
-import static android.opengl.Matrix.*;
+import android.view.MotionEvent;
 
 
 /**
@@ -17,12 +11,16 @@ import static android.opengl.Matrix.*;
  */
 public class MainActivity extends Activity {
   private GLSurfaceView mSurfaceView;
+  private CubeRender mRender;
+  private TouchEventHandler mTouchEventHandler;
 
   @Override protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     mSurfaceView = new GLSurfaceView(this);
     mSurfaceView.setEGLContextClientVersion(2);
-    mSurfaceView.setRenderer(new CubeRender(this));
+    mRender = new CubeRender(this);
+    mTouchEventHandler = new TouchEventHandler(mRender);
+    mSurfaceView.setRenderer(mRender);
     setContentView(mSurfaceView);
   }
 
@@ -36,4 +34,8 @@ public class MainActivity extends Activity {
     mSurfaceView.onPause();
   }
 
+  @Override public boolean onTouchEvent(MotionEvent event) {
+    mTouchEventHandler.handleTouchEvent(event);
+    return super.onTouchEvent(event);
+  }
 }
