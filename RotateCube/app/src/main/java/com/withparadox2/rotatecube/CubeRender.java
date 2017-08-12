@@ -43,6 +43,9 @@ public class CubeRender implements GLSurfaceView.Renderer {
 
   private final float[] hyperMatrix = new float[16];
 
+  final static float PRE_ROTATE_X = 20f;
+  final static float PRE_ROTATE_Y = 130f;
+
   private float[][] vertexes = {
       { -1, -1, -1, -1 }, { -1, -1, -1, 1 }, { -1, -1, 1, -1 }, { -1, -1, 1, 1 }, { -1, 1, -1, -1 },
       { -1, 1, -1, 1 }, { -1, 1, 1, -1 }, { -1, 1, 1, 1 }, { 1, -1, -1, -1 }, { 1, -1, -1, 1 },
@@ -136,12 +139,16 @@ public class CubeRender implements GLSurfaceView.Renderer {
     setIdentityM(modelMatrix, 0);
 
     translateM(modelMatrix, 0, 0f, 0f, -5f);
-    rotateM(modelMatrix, 0, 20f, 1f, 0f, 0f);
-    rotateM(modelMatrix, 0, 130f, 0f, 1f, 0f);
-
     multiplyMM(temp, 0, projectionMatrix, 0, modelMatrix, 0);
-    System.arraycopy(temp, 0, projectionMatrix, 0, temp.length);
+
+    //Store original transform matrix into a copy, which will enable the right rotation while touching.
     System.arraycopy(temp, 0, projectionMatrixCopy, 0, temp.length);
+
+    setIdentityM(modelMatrix, 0);
+    rotateM(modelMatrix, 0, PRE_ROTATE_X, 1f, 0f, 0f);
+    rotateM(modelMatrix, 0, PRE_ROTATE_Y, 0f, 1f, 0f);
+    updateProjectMatrix(modelMatrix);
+
   }
 
   public void updateProjectMatrix(float[] transform) {
